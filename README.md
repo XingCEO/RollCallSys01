@@ -29,18 +29,13 @@
 npm install remix-auth@3.4.0 remix-auth-google@2.0.0
 ```
 ## 建立.env檔案
-跟package.json同一層
-
+- 跟package.json同一層
+```ts
 GOOGLE_CLIENT_ID=......
 GOOGLE_CLIENT_SECRET=.....
 GOOGLE_CALLBACK_URL=http://localhost:5173/auth/google/callback
-# 將您的秘密放在這裡，可以是任何您想要的內容，但隨機字元更好
 AUTH_SECRET=亂數產生
-
-## 建立.env檔案
-import { LoaderFunctionArgs, json } from "@remix-run/node";
-import { authenticator } from "./services/auth.server";
-
+```
 ## 受保護的個人資料頁面,增加程式碼
 ```ts
 // app/routes/profile.tsx
