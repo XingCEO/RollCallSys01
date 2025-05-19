@@ -9,6 +9,9 @@ declare module "@remix-run/node" {
 }
 
 export default defineConfig({
+  optimizeDeps: {
+    include: ["@remix-run/node"],
+  },
   plugins: [
     remix({
       future: {

@@ -11,10 +11,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
   
   return json({ user: user as User });
 }
-export default function Index() {
+
+export default function Dashboard() {
+  const { user } = useLoaderData<typeof loader>();
+  
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold">歡迎來到首頁</h1>
+    <div>
+      <h1>歡迎，{user.name}！</h1>
+      <img src={user.avatarUrl} alt={user.name} width="50" height="50" />
+      <p>Email: {user.email}</p>
+   <a
+        href="/logout"
+        className="px-4 py-2 rounded-md bg-red-500 hover:bg-red-400"
+      >
+        Logout
+      </a>
     </div>
   );
 }
