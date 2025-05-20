@@ -21,6 +21,8 @@ const googleStrategy = new GoogleStrategy(
   },
   async ({ profile }) => {
     // 在這裡處理使用者資料
+    console.log("來自 GOOGLE 身份驗證策略的日誌");
+    console.log({ profile });
     return {
       id: profile.id,
       email: profile.emails[0].value,
