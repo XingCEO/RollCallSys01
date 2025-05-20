@@ -2,7 +2,7 @@
 
 ## 程式架構
 
-此 Remix 應用程式結構旨在實現 Google OAuth2 認證。關鍵組件包括：
+此 Remix 應用程式結構旨在實現 Google OAuth2 全站認證。關鍵組件包括：
 
 - **路由**：
   - `auth.google.tsx`：處理 Google 認證的啟動。
