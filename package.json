@@ -9,7 +9,12 @@
     "dev:verbose": "remix vite:dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "db:init": "node scripts/init-db.js",
+    "db:init:test": "node scripts/init-db.js --with-test-data",
+    "db:backup": "node scripts/backup-db.js",
+    "db:reset": "rm -f ./data/app.db && npm run db:init",
+    "db:status": "node scripts/db-status.js"
   },
   "dependencies": {
     "@remix-run/node": "^2.12.0",
@@ -18,12 +23,14 @@
     "isbot": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "google-auth-library": "^9.14.1"
+    "google-auth-library": "^9.14.1",
+    "better-sqlite3": "^9.2.2"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.12.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
+    "@types/better-sqlite3": "^7.6.8",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.38.0",
     "eslint-import-resolver-typescript": "^3.6.1",

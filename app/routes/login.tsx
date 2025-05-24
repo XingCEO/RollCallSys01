@@ -1,3 +1,6 @@
+// app/routes/login.tsx
+// 登入頁面 (更新版本，包含更多錯誤處理)
+
 import * as React from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
@@ -16,17 +19,30 @@ export default function Login() {
   const getErrorMessage = (error: string | null) => {
     switch (error) {
       case "oauth_error":
-        return "Google 認證過程中發生錯誤";
+        return "Google 認證過程中發生錯誤，請重試";
       case "missing_code":
-        return "認證碼遺失";
+        return "認證碼遺失，請重新登入";
       case "auth_failed":
         return "認證失敗，請重試";
+      case "google_auth_failed":
+        return "Google 認證失敗，請檢查網路連線後重試";
+      case "account_exists":
+        return "此 Google 帳號或電子郵件已存在";
+      case "create_user_failed":
+        return "建立帳號失敗，請重試";
+      case "database_error":
+        return "系統暫時無法使用，請稍後再試";
+      case "insufficient_permissions":
+        return "權限不足，無法存取該頁面";
+      case "admin_required":
+        return "需要管理員權限才能存取";
       default:
         return null;
     }
   };
   
   const errorMessage = getErrorMessage(error);
+  const isSystemError = ['database_error', 'create_user_failed'].includes(error || '');
   
   return (
     <main className="relative w-full min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-50">
@@ -36,7 +52,11 @@ export default function Login() {
         </h1>
         
         {errorMessage && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className={`mb-4 p-3 border rounded ${
+            isSystemError 
+              ? 'bg-orange-100 border-orange-400 text-orange-700' 
+              : 'bg-red-100 border-red-400 text-red-700'
+          }`}>
             {errorMessage}
           </div>
         )}
@@ -47,7 +67,7 @@ export default function Login() {
         
         <Link
           to="/auth/google"
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-lg px-6 py-3 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -57,7 +77,18 @@ export default function Login() {
           </svg>
           使用 Google 登入
         </Link>
+        
+        <div className="mt-6 text-center text-sm text-gray-500">
+          <p>首次登入將自動建立帳號</p>
+        </div>
       </div>
+      
+      {/* 開發環境顯示系統狀態 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-400 text-center">
+          <p>開發模式 - 資料庫: SQLite</p>
+        </div>
+      )}
     </main>
   );
 }
