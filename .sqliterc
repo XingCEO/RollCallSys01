@@ -1,0 +1,9 @@
+-- .sqliterc
+-- SQLite 配置檔案，用於標識這是 SQLite 專案
+
+.headers on
+.mode column
+.timer on
+
+-- 顯示 SQLite 版本
+SELECT 'SQLite Version: ' || sqlite_version() as info;

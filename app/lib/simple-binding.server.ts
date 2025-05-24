@@ -1,9 +1,39 @@
 // app/lib/simple-binding.server.ts
-// 簡化版綁定狀態檢查
+// 簡化版綁定狀態檢查 (修復 TypeScript 類型問題)
 
 import Database from 'better-sqlite3';
 
 const DB_PATH = process.env.DATABASE_PATH || './data/app.db';
+
+// 定義資料庫查詢結果的類型
+interface UserBindingRow {
+  binding_status: string;
+  student_id: string | null;
+}
+
+interface UserStudentJoinRow {
+  binding_status: string;
+  student_id: string | null;
+  name: string | null;
+  department: string | null;
+  grade: number | null;
+  class_code: string | null;
+  phone: string | null;
+}
+
+interface StudentRow {
+  student_id: string;
+  name: string;
+  department: string | null;
+  grade: number | null;
+  class_code: string | null;
+  phone: string | null;
+  status: string;
+}
+
+interface UserRow {
+  id: number;
+}
 
 function getDb() {
   return new Database(DB_PATH);
@@ -19,7 +49,7 @@ export function isUserBound(userId: number): boolean {
       SELECT binding_status, student_id 
       FROM users 
       WHERE id = ? AND binding_status = 'bound' AND student_id IS NOT NULL
-    `).get(userId);
+    `).get(userId) as UserBindingRow | undefined;
     
     db.close();
     return !!result;
@@ -41,7 +71,7 @@ export function getUserBinding(userId: number) {
       FROM users u
       LEFT JOIN students s ON u.student_id = s.student_id
       WHERE u.id = ?
-    `).get(userId);
+    `).get(userId) as UserStudentJoinRow | undefined;
     
     db.close();
     
@@ -50,10 +80,10 @@ export function getUserBinding(userId: number) {
         isbound: true,
         student: {
           studentId: result.student_id,
-          name: result.name,
-          department: result.department,
-          grade: result.grade,
-          classCode: result.class_code,
+          name: result.name || '未知',
+          department: result.department || '未知',
+          grade: result.grade || 0,
+          classCode: result.class_code || '未知',
           phone: result.phone || '未提供',
           emergencyContact: '未提供',
           emergencyPhone: '未提供'
@@ -84,7 +114,7 @@ export function bindUserToStudent(userId: number, studentId: string): { success:
     // 檢查用戶是否已綁定
     const existingBinding = db.prepare(`
       SELECT id FROM users WHERE id = ? AND binding_status = 'bound' AND student_id IS NOT NULL
-    `).get(userId);
+    `).get(userId) as UserRow | undefined;
     
     if (existingBinding) {
       db.close();
@@ -94,7 +124,7 @@ export function bindUserToStudent(userId: number, studentId: string): { success:
     // 檢查學號是否已被其他人綁定
     const studentTaken = db.prepare(`
       SELECT id FROM users WHERE student_id = ? AND binding_status = 'bound'
-    `).get(studentId);
+    `).get(studentId) as UserRow | undefined;
     
     if (studentTaken) {
       db.close();
@@ -104,7 +134,7 @@ export function bindUserToStudent(userId: number, studentId: string): { success:
     // 檢查學號是否存在
     const student = db.prepare(`
       SELECT student_id FROM students WHERE student_id = ? AND status = 'active'
-    `).get(studentId);
+    `).get(studentId) as StudentRow | undefined;
     
     if (!student) {
       db.close();

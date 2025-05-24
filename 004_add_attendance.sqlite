@@ -1,0 +1,128 @@
+-- 004_add_attendance.sqlite
+-- SQLite 點名系統資料庫遷移檔案
+-- 請使用 SQLite 語法檢查器
+
+PRAGMA foreign_keys = ON;
+
+-- 課程資料表
+CREATE TABLE IF NOT EXISTS courses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_code TEXT UNIQUE NOT NULL,
+    course_name TEXT NOT NULL,
+    instructor TEXT,
+    department TEXT,
+    credits INTEGER DEFAULT 3,
+    semester TEXT,
+    classroom TEXT,
+    schedule TEXT,
+    description TEXT,
+    max_students INTEGER DEFAULT 50,
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 點名記錄資料表
+CREATE TABLE IF NOT EXISTS attendance_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    student_id TEXT NOT NULL,
+    course_id INTEGER,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    accuracy REAL,
+    timestamp DATETIME NOT NULL,
+    status TEXT DEFAULT 'present',
+    device_info TEXT,
+    ip_address TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
+);
+
+-- 課程學生選課關聯表
+CREATE TABLE IF NOT EXISTS course_enrollments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    student_id TEXT NOT NULL,
+    enrollment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status TEXT DEFAULT 'enrolled',
+    grade TEXT,
+    
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    
+    UNIQUE(course_id, user_id)
+);
+
+-- 點名地點設定表
+CREATE TABLE IF NOT EXISTS attendance_locations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER,
+    location_name TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    radius REAL DEFAULT 100,
+    address TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
+
+-- 建立索引
+CREATE INDEX IF NOT EXISTS idx_attendance_user_id ON attendance_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_course_id ON attendance_records(course_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_timestamp ON attendance_records(timestamp);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(date(timestamp));
+CREATE INDEX IF NOT EXISTS idx_attendance_status ON attendance_records(status);
+
+CREATE INDEX IF NOT EXISTS idx_courses_code ON courses(course_code);
+CREATE INDEX IF NOT EXISTS idx_courses_status ON courses(status);
+CREATE INDEX IF NOT EXISTS idx_courses_semester ON courses(semester);
+
+CREATE INDEX IF NOT EXISTS idx_enrollments_course_user ON course_enrollments(course_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON course_enrollments(student_id);
+
+CREATE INDEX IF NOT EXISTS idx_locations_course ON attendance_locations(course_id);
+CREATE INDEX IF NOT EXISTS idx_locations_active ON attendance_locations(is_active);
+
+-- 建立觸發器
+CREATE TRIGGER IF NOT EXISTS courses_updated_at 
+    AFTER UPDATE ON courses
+    FOR EACH ROW
+    BEGIN
+        UPDATE courses SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    END;
+
+-- 插入測試資料
+INSERT OR IGNORE INTO courses (course_code, course_name, instructor, department, semester, classroom, schedule) VALUES
+('CS101', '計算機概論', '王教授', '資訊工程系', '2024-1', 'E101', '週一 09:10-12:00'),
+('CS201', '資料結構', '李教授', '資訊工程系', '2024-1', 'E102', '週二 13:10-16:00'),
+('EE101', '電路學', '張教授', '電子工程系', '2024-1', 'F201', '週三 09:10-12:00'),
+('ME101', '工程力學', '陳教授', '機械工程系', '2024-1', 'G101', '週四 13:10-16:00'),
+('CS301', '軟體工程', '劉教授', '資訊工程系', '2024-1', 'E103', '週五 09:10-12:00');
+
+INSERT OR IGNORE INTO attendance_locations (location_name, latitude, longitude, radius, address) VALUES
+('工學院大樓', 25.0174, 121.5398, 150, '台北市工學院大樓'),
+('資訊大樓', 25.0184, 121.5408, 120, '台北市資訊大樓'),
+('圖書館', 25.0164, 121.5388, 100, '台北市中央圖書館'),
+('學生活動中心', 25.0154, 121.5378, 80, '台北市學生活動中心'),
+('體育館', 25.0144, 121.5368, 200, '台北市體育館');
+
+-- 為測試學生自動選課
+INSERT OR IGNORE INTO course_enrollments (course_id, user_id, student_id) 
+SELECT 
+    c.id as course_id,
+    u.id as user_id,
+    s.student_id
+FROM courses c, users u, students s
+WHERE c.course_code = 'CS101' 
+    AND s.student_id = '123456'
+    AND u.student_id = s.student_id
+    AND u.binding_status = 'bound'
+LIMIT 1;
