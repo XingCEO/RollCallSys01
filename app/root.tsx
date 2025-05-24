@@ -9,28 +9,35 @@ import {
   ScrollRestoration,
   useLoaderData,
 } from "@remix-run/react";
-import { authenticator } from "./routes/services/auth.server";
-import type { LinksFunction } from "@remix-run/node";
+import { getUserFromSession } from "./routes/services/session.server";
 
 import "./tailwind.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  // 先放過不需驗證的公開路由
+  
+  // 不需驗證的公開路由
   if (
     url.pathname === "/login" ||
-    url.pathname.startsWith("/auth/google")
+    url.pathname.startsWith("/auth/google") ||
+    url.pathname === "/auth/google/callback"
   ) {
     return json({ user: null });
   }
-  // 其餘一律驗證
-  const user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login",
-  });
+  
+  // 其他路由檢查登入狀態
+  const user = await getUserFromSession(request);
+  if (!user) {
+    throw new Response("Redirect", {
+      status: 302,
+      headers: {
+        Location: "/login",
+      },
+    });
+  }
+  
   return json({ user });
 }
-
-
 
 export default function App() {
   const { user } = useLoaderData<typeof loader>();
@@ -38,11 +45,12 @@ export default function App() {
   return (
     <html lang="zh-TW">
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
       <body>
-        {/* 你可以把 user 放到 context 或直接傳給 Outlet */}
         <Outlet context={{ user }} />
         <ScrollRestoration />
         <Scripts />

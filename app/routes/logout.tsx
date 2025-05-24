@@ -1,11 +1,14 @@
-// app/routes/logout.tsx
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { authenticator } from "./services/auth.server";
+import { LoaderFunctionArgs } from "@remix-run/node";
+import { getSession, destroySession } from "./services/session.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  return authenticator.logout(request, { redirectTo: "/login" });
-}
-
-export async function action({ request }: ActionFunctionArgs) {
-  return authenticator.logout(request, { redirectTo: "/login" });
+  const session = await getSession(request.headers.get("Cookie"));
+  
+  return new Response("Redirect", {
+    status: 302,
+    headers: {
+      Location: "/login",
+      "Set-Cookie": await destroySession(session),
+    },
+  });
 }
